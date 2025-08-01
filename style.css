@@ -1,0 +1,100 @@
+body {
+  margin: 0;
+  overflow: hidden;
+  background: white;
+}
+.face-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 1;
+}
+
+#lico, .clone {
+  position: absolute;
+  width: 200px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 11;
+  transition: transform 0.1s linear;
+}
+.label {
+  position: absolute;
+  font-size: 12px;
+  color: black;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  z-index: 10;
+}
+
+
+#lineCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+}
+.timer-label {
+  position: absolute;
+  font-size: 12px;
+  color: black;
+  font-family: monospace;
+  text-align: center;
+  pointer-events: none;
+  z-index: 3;
+}
+#note-under-me {
+  position: absolute;
+  font-size: 12px;
+  color: #333;
+  font-family: sans-serif;
+  line-height: 1.4;
+  text-align: center;
+  transform: translate(-50%, 0);
+  top: 50%;
+  left: 50%;
+  margin-top: 50px; /* Располагается под "я" */
+  pointer-events: none;
+  z-index: 2;
+}
+
+
+.warning-label {
+  position: absolute;
+  font-size: 11px;
+  color: crimson;
+  font-family: sans-serif;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+.summary-label {
+  position: absolute;
+  font-size: 12px;
+  color: #333;
+  transform: translate(-50%, 0);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 3;
+}
+
+#longest-connection-box {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  z-index: 9999;
+  font-family: sans-serif;
+}
