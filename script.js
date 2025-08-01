@@ -16,8 +16,8 @@ originLabel.textContent = 'я';
 document.body.appendChild(originLabel);
 
 const counterLabel = document.createElement('div');
-counterLabel.className = 'label';
-counterLabel.textContent = 'связей = 0';
+counterLabel.className = 'label counter-label';
+counterLabel.textContent = 'сейчас связей = 0';
 document.body.appendChild(counterLabel);
 let totalConnections = 0;
 let longestConnection = 0;
@@ -90,7 +90,7 @@ function createClone(originElement) {
 
   clones.push(data);
   totalConnections++;
-  counterLabel.textContent = `связей = ${clones.filter(c => !c.expired).length}`;
+  counterLabel.textContent = `сейчас связей = ${clones.filter(c => !c.expired).length}`;
   attachEvents(data);
   updateLine(line, originElement, clone);
 }
@@ -178,8 +178,17 @@ function attachEvents(data) {
 
 function handleCreateClone(e) {
   e.preventDefault();
+  
+  const isTouch = e.type === 'touchstart';
   if (lico.src.includes('lico3.png')) return;
+  
+  if (isTouch) {
+    createClone(lico);
+  } else {
+  
+  
   createClone(lico);
+  }
 }
 
 lico.addEventListener('mousedown', handleCreateClone);
@@ -300,7 +309,7 @@ function animate() {
   const licoCenter = getCenter(lico);
   originLabel.style.left = `${licoCenter.x}px`;
   originLabel.style.top = `${licoCenter.y + 15}px`;
-  counterLabel.textContent = `связей = ${clones.filter(c => !c.expired).length}`;
+  counterLabel.textContent = `сейчас связей = ${clones.filter(c => !c.expired).length}`;
   counterLabel.style.left = `${licoCenter.x}px`;
   counterLabel.style.top = `${licoCenter.y + 35}px`;
 
