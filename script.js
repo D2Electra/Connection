@@ -4,34 +4,28 @@ const clones = [];
 const isTouch = window.matchMedia('(pointer: coarse)').matches;
 const cloneSound = new Audio('music/1.wav');
 
-// Центрируем lico
-window.addEventListener('load', () => {
-  const centerX = window.innerWidth / 2;
-  const centerY = window.innerHeight / 2;
+// === Надпись "Я" под lico ===
+const parent = lico.parentElement;
+parent.style.position = 'relative';
 
-  lico.style.position = 'absolute';
-  lico.style.left = `${centerX}px`;
-  lico.style.top = `${centerY}px`;
-  lico.style.transform = 'translate(-50%, -50%)';
-  lico.style.zIndex = '1001';
 
-  // Добавляем подпись "Я"
-  const licoLabel = document.createElement('div');
-  licoLabel.textContent = 'Я';
-  Object.assign(licoLabel.style, {
-    position: 'absolute',
-    fontSize: '14px',
-    fontFamily: 'sans-serif',
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    zIndex: '1002',
-    pointerEvents: 'none',
-    left: `${centerX}px`,
-    top: `${centerY + lico.offsetHeight / 2 + 5}px`,
-    transform: 'translateX(-50%)'
-  });
-  document.body.appendChild(licoLabel);
+const licoLabel = document.createElement('div');
+licoLabel.textContent = 'Я';
+Object.assign(licoLabel.style, {
+  position: 'absolute',
+  fontSize: '14px',
+  fontFamily: 'sans-serif',
+  fontWeight: 'bold',
+  textTransform: 'uppercase',
+  color: 'black',
+  zIndex: '1002',
+  left: '50%',
+  top: '100%', // ниже lico
+  marginTop: '16px', // ← запятая здесь!
+  transform: 'translateX(-50%)' // ← теперь работает
 });
+lico.parentElement.appendChild(licoLabel);
+
 
 // === Инструкция ===
 let instructionRevealed = false;
@@ -61,7 +55,7 @@ function revealFullInstruction() {
   setTimeout(() => instructionBox.remove(), 25000);
 }
 
-// === Событие на lico ===
+// === Обработка клика на lico ===
 lico.addEventListener('mousedown', handleCreateClone);
 lico.addEventListener('touchstart', handleCreateClone, { passive: false });
 
@@ -75,25 +69,23 @@ function handleCreateClone(e) {
 function createClone(originElement) {
   try { cloneSound.currentTime = 0; cloneSound.play(); } catch {}
 
-  const originCenter = getCenter(originElement);
+  const originRect = originElement.getBoundingClientRect();
+  const originX = originRect.left + originRect.width / 2 + window.scrollX;
+  const originY = originRect.top + originRect.height / 2 + window.scrollY;
 
   const clone = document.createElement('img');
   clone.src = 'images/lico.png';
-  document.body.appendChild(clone);
-
-  // Клон немного меньше оригинала
-  const baseWidth = lico.offsetWidth;
-  clone.style.width = baseWidth > 0 ? `${baseWidth * 0.85}px` : (isTouch ? '24vw' : '180px');
-
   Object.assign(clone.style, {
     position: 'absolute',
-    left: `${originCenter.x}px`,
-    top: `${originCenter.y}px`,
+    width: isTouch ? '25vw' : '180px',
+    left: `${originX}px`,
+    top: `${originY}px`,
     transform: 'translate(-50%, -50%)',
     zIndex: '1001',
     cursor: 'pointer',
     transition: 'opacity 0.3s ease'
   });
+  document.body.appendChild(clone);
 
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   line.setAttribute('stroke', 'black');
@@ -137,8 +129,8 @@ function createClone(originElement) {
     timerLabel,
     isDragging: false,
     draggingOffset: { x: 0, y: 0 },
-    targetX: originCenter.x,
-    targetY: originCenter.y,
+    targetX: originX,
+    targetY: originY,
     lastUpdate: Date.now(),
     timer: randomTimer,
     lineStrokeWidth: 5,
@@ -152,7 +144,7 @@ function createClone(originElement) {
   updateLine(line, originElement, clone);
 }
 
-// === Перемещение ===
+// === События перетаскивания ===
 function attachEvents(data) {
   const { clone } = data;
   let moved = false;
@@ -161,8 +153,6 @@ function attachEvents(data) {
   clone.addEventListener('touchstart', start, { passive: false });
 
   function start(e) {
-    if (data.fixed) return;
-
     e.preventDefault();
     moved = false;
     const isTouch = e.type === 'touchstart';
@@ -187,14 +177,12 @@ function attachEvents(data) {
       document.removeEventListener('touchmove', move);
       document.removeEventListener('touchend', stop);
       data.isDragging = false;
-
       if (!moved) createClone(clone);
       else data.timer = 30000;
-
       data.lineBlinkOn = false;
+      data.lineStrokeWidth = 5;
       data.line.setAttribute('stroke-dasharray', '');
       data.line.setAttribute('stroke', 'black');
-      data.line.setAttribute('stroke-width', '5');
     };
 
     document.addEventListener('mousemove', move);
@@ -204,12 +192,12 @@ function attachEvents(data) {
   }
 }
 
-// === Анимация ===
+// === Вспомогательные функции ===
 function getCenter(elem) {
   const rect = elem.getBoundingClientRect();
   return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2
+    x: rect.left + rect.width / 2 + window.scrollX,
+    y: rect.top + rect.height / 2 + window.scrollY
   };
 }
 
@@ -222,9 +210,9 @@ function updateLine(line, from, to) {
   line.setAttribute('y2', p2.y);
 }
 
+// === Анимация ===
 function animate() {
   const now = Date.now();
-
   for (const data of clones) {
     const { clone, line, origin, label, timerLabel } = data;
 
@@ -233,18 +221,18 @@ function animate() {
       const currentY = parseFloat(clone.style.top);
       const vx = (data.targetX - currentX) * 0.1;
       const vy = (data.targetY - currentY) * 0.1;
-      const newX = currentX + vx;
-      const newY = currentY + vy;
-
+      const newX = Math.abs(vx) < 0.5 ? data.targetX : currentX + vx;
+      const newY = Math.abs(vy) < 0.5 ? data.targetY : currentY + vy;
       clone.style.left = `${newX}px`;
       clone.style.top = `${newY}px`;
 
       updateLine(line, origin, clone);
 
       label.style.left = `${newX}px`;
-      label.style.top = `${newY + 25}px`;
+      label.style.top = `${newY + 40}px`; // "ТЫ" ниже
+
       timerLabel.style.left = `${newX}px`;
-      timerLabel.style.top = `${newY - 40}px`;
+      timerLabel.style.top = `${newY - 60}px`; // таймер выше
 
       const elapsed = now - data.lastUpdate;
       const dist = Math.hypot(newX - getCenter(origin).x, newY - getCenter(origin).y);
@@ -255,34 +243,35 @@ function animate() {
       const remaining = Math.max(0, data.timer);
       timerLabel.textContent = (remaining / 1000).toFixed(1);
 
-      const maxStroke = 5;
-      const minStroke = 1;
-      const totalTime = 30000;
-      const strokeWidth = Math.max(minStroke, maxStroke * (remaining / totalTime));
-      line.setAttribute('stroke-width', strokeWidth.toFixed(1));
+      data.lineStrokeWidth = Math.max(1, (remaining / data.timer) * 5);
+      line.setAttribute('stroke-width', data.lineStrokeWidth);
 
-      if (remaining <= 5000 && remaining > 0) {
+      if (remaining <= 0 && !data.fixed) {
+        clone.src = 'images/lico3.png';
+        data.fixed = true;
+        data.timer = 0;
+        line.setAttribute('stroke-dasharray', '10,5');
+        line.setAttribute('stroke', 'black');
+        line.setAttribute('stroke-width', 1);
+        timerLabel.textContent = '0.0';
+      }
+
+      if (!data.fixed && remaining === 0) {
+        data.lineBlinkOn = true;
+      }
+
+      if (data.lineBlinkOn && !data.fixed) {
         data.blinkCounter = (data.blinkCounter + 1) % 60;
         if (data.blinkCounter < 30) {
           line.setAttribute('stroke-dasharray', '10,5');
           line.setAttribute('stroke', 'black');
         } else {
+          line.setAttribute('stroke-dasharray', '');
           line.setAttribute('stroke', 'transparent');
         }
       }
-
-      if (remaining <= 0 && !data.fixed) {
-        data.fixed = true;
-        clone.src = 'images/lico3.png';
-        line.setAttribute('stroke', 'black');
-        line.setAttribute('stroke-dasharray', '10,5');
-        line.setAttribute('stroke-width', '1');
-        clone.style.pointerEvents = 'none';
-        timerLabel.textContent = '0.0';
-      }
     }
   }
-
   requestAnimationFrame(animate);
 }
 

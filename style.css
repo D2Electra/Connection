@@ -12,7 +12,18 @@ body {
   z-index: 1;
 }
 
-#lico, .clone {
+#lico {
+  position: relative;
+  width: 800px;
+  top: 55%; /* было 50% */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  z-index: 11;
+  transition: transform 0.1s linear;
+}
+
+.clone {
   position: absolute;
   width: 800px;
   top: 50%;
@@ -22,6 +33,7 @@ body {
   z-index: 11;
   transition: transform 0.1s linear;
 }
+
 .label {
   position: absolute;
   font-size: 12px;
