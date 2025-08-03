@@ -14,7 +14,7 @@ body {
 
 #lico, .clone {
   position: absolute;
-  width: 200px;
+  width: 800px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);

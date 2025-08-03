@@ -5,50 +5,73 @@ const clones = [];
 const cloneSound = new Audio('music/1.wav');
 const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 
-// Инструкция без рамки
+// Инструкция: сначала "ВСЁ НАЧИНАЕТСЯ С 'Я'"
 const instructionBox = document.createElement('div');
 instructionBox.id = 'instruction';
-instructionBox.innerHTML = `
-  ЭТО НЕ СИМУЛЯТОР ОБЩЕНИЯ<br>
-  ЭТО СИМУЛЯТОР ЕГО ПОТЕРИ<br><br>
-  ТЫ ПОЯВИЛСЯ<br>
-  ТЕБЯ МОЖНО ОТПУСТИТЬ<br>
-  ТЕБЯ МОЖНО УДЕРЖАТЬ<br>
-  МОЖНО И ЗАБЫТЬ<br>
-  ТЫ ТОЖЕ МОЖЕШЬ НАЧАТЬ
-`;
+instructionBox.textContent = 'ВСЁ НАЧИНАЕТСЯ С «Я»';
 document.body.appendChild(instructionBox);
 
-instructionBox.style.position = 'fixed';
-instructionBox.style.top = '0';
-instructionBox.style.left = '0';
-instructionBox.style.width = '100%';
-instructionBox.style.fontFamily = 'sans-serif';
-instructionBox.style.fontWeight = 'bold';
-instructionBox.style.fontSize = '16px';
-instructionBox.style.textAlign = 'center';
-instructionBox.style.color = 'black';
-instructionBox.style.background = 'white';
-instructionBox.style.padding = '12px 0';
-instructionBox.style.zIndex = '1000';
-instructionBox.style.textTransform = 'uppercase';
+Object.assign(instructionBox.style, {
+  position: 'fixed',
+  top: '0',
+  left: '0',
+  width: '100%',
+  fontFamily: 'sans-serif',
+  fontWeight: 'bold',
+  fontSize: '16px',
+  textAlign: 'center',
+  color: 'black',
+  background: 'white',
+  padding: '12px 0',
+  zIndex: '1000',
+  textTransform: 'uppercase'
+});
 
-// Разрешаем аудио после первого взаимодействия
-document.addEventListener('click', () => {
-  cloneSound.play().catch(() => {});
-}, { once: true });
+let instructionRevealed = false;
+
+function revealFullInstruction() {
+  if (instructionRevealed) return;
+  instructionRevealed = true;
+  instructionBox.innerHTML = `
+    ЭТО НЕ СИМУЛЯТОР ОБЩЕНИЯ<br>
+    ЭТО СИМУЛЯТОР ЕГО ПОТЕРИ<br><br>
+    ТЫ ПОЯВИЛСЯ<br>
+    ТЕБЯ МОЖНО ОТПУСТИТЬ<br>
+    ТЕБЯ МОЖНО УДЕРЖАТЬ<br>
+    МОЖНО И ЗАБЫТЬ<br>
+    ТЫ ТОЖЕ МОЖЕШЬ НАЧАТЬ
+  `;
+  setTimeout(() => {
+    instructionBox.remove();
+  }, 25000);
+}
+
+lico.addEventListener('mousedown', handleCreateClone);
+lico.addEventListener('touchstart', handleCreateClone, { passive: false });
+
+function handleCreateClone(e) {
+  e.preventDefault();
+  if (!instructionRevealed) {
+    revealFullInstruction();
+  }
+  createClone(lico);
+}
 
 const originLabel = document.createElement('div');
 originLabel.className = 'label';
 originLabel.textContent = 'Я';
-originLabel.style.fontFamily = 'sans-serif';
-originLabel.style.fontWeight = 'bold';
-originLabel.style.textTransform = 'uppercase';
+Object.assign(originLabel.style, {
+  fontFamily: 'sans-serif',
+  fontWeight: 'bold',
+  textTransform: 'uppercase',
+  zIndex: '1002'
+});
 document.body.appendChild(originLabel);
 
 const counterLabel = document.createElement('div');
 counterLabel.className = 'label counter-label';
 counterLabel.textContent = 'связей = 0';
+counterLabel.style.zIndex = '1002';
 document.body.appendChild(counterLabel);
 let totalConnections = 0;
 let longestConnection = 0;
@@ -84,6 +107,8 @@ function createClone(originElement) {
   clone.className = 'clone';
   clone.style.left = `${originCenter.x}px`;
   clone.style.top = `${originCenter.y}px`;
+  clone.style.width = isTouchDevice ? '18vw' : '150px';
+  clone.style.zIndex = '1001';
   document.body.appendChild(clone);
 
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -94,14 +119,18 @@ function createClone(originElement) {
   const timerLabel = document.createElement('div');
   timerLabel.className = 'timer-label';
   timerLabel.textContent = '...';
+  timerLabel.style.zIndex = '1002';
   document.body.appendChild(timerLabel);
 
   const label = document.createElement('div');
   label.className = 'label';
   label.textContent = 'ТЫ';
-  label.style.fontFamily = 'sans-serif';
-  label.style.fontWeight = 'bold';
-  label.style.textTransform = 'uppercase';
+  Object.assign(label.style, {
+    fontFamily: 'sans-serif',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    zIndex: '1002'
+  });
   document.body.appendChild(label);
 
   const data = {
@@ -128,6 +157,7 @@ function createClone(originElement) {
   attachEvents(data);
   updateLine(line, originElement, clone);
 }
+
 
 
 
@@ -217,17 +247,15 @@ function attachEvents(data) {
 
 function handleCreateClone(e) {
   e.preventDefault();
-  
-  const isTouch = e.type === 'touchstart';
-  if (lico.src.includes('lico3.png')) return;
-  
-  if (isTouch) {
-    createClone(lico);
-  } else {
-  
-  
-  createClone(lico);
+
+  // показываем полную инструкцию только при первом взаимодействии
+  if (!instructionRevealed) {
+    revealFullInstruction();
   }
+
+  createClone(lico);
+}
+
 }
 
 lico.addEventListener('mousedown', handleCreateClone);
