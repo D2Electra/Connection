@@ -1,33 +1,21 @@
-// script.js
 const lico = document.getElementById('lico');
 const svg = document.getElementById('lineCanvas');
 const clones = [];
+const isTouch = window.matchMedia('(pointer: coarse)').matches;
 const cloneSound = new Audio('music/1.wav');
-const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 
-// Инструкция: сначала "ВСЁ НАЧИНАЕТСЯ С 'Я'"
+// === Инструкция ===
+let instructionRevealed = false;
 const instructionBox = document.createElement('div');
-instructionBox.id = 'instruction';
 instructionBox.textContent = 'ВСЁ НАЧИНАЕТСЯ С «Я»';
-document.body.appendChild(instructionBox);
-
 Object.assign(instructionBox.style, {
-  position: 'fixed',
-  top: '0',
-  left: '0',
-  width: '100%',
-  fontFamily: 'sans-serif',
-  fontWeight: 'bold',
-  fontSize: '16px',
-  textAlign: 'center',
-  color: 'black',
-  background: 'white',
-  padding: '12px 0',
-  zIndex: '1000',
+  position: 'fixed', top: '0', left: '0', width: '100%',
+  textAlign: 'center', fontSize: '20px',
+  fontFamily: 'monospace', fontWeight: 'bold',
+  background: 'white', zIndex: '1000', padding: '12px 0',
   textTransform: 'uppercase'
 });
-
-let instructionRevealed = false;
+document.body.appendChild(instructionBox);
 
 function revealFullInstruction() {
   if (instructionRevealed) return;
@@ -41,74 +29,36 @@ function revealFullInstruction() {
     МОЖНО И ЗАБЫТЬ<br>
     ТЫ ТОЖЕ МОЖЕШЬ НАЧАТЬ
   `;
-  setTimeout(() => {
-    instructionBox.remove();
-  }, 25000);
+  setTimeout(() => instructionBox.remove(), 25000);
 }
 
+// === Событие на lico ===
 lico.addEventListener('mousedown', handleCreateClone);
 lico.addEventListener('touchstart', handleCreateClone, { passive: false });
 
 function handleCreateClone(e) {
   e.preventDefault();
-  if (!instructionRevealed) {
-    revealFullInstruction();
-  }
+  if (!instructionRevealed) revealFullInstruction();
   createClone(lico);
 }
 
-const originLabel = document.createElement('div');
-originLabel.className = 'label';
-originLabel.textContent = 'Я';
-Object.assign(originLabel.style, {
-  fontFamily: 'sans-serif',
-  fontWeight: 'bold',
-  textTransform: 'uppercase',
-  zIndex: '1002'
-});
-document.body.appendChild(originLabel);
-
-const counterLabel = document.createElement('div');
-counterLabel.className = 'label counter-label';
-counterLabel.textContent = 'связей = 0';
-counterLabel.style.zIndex = '1002';
-document.body.appendChild(counterLabel);
-let totalConnections = 0;
-let longestConnection = 0;
-
-function getCenter(elem) {
-  const rect = elem.getBoundingClientRect();
-  return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2
-  };
-}
-
-function updateLine(line, fromElem, toElem) {
-  const from = getCenter(fromElem);
-  const to = getCenter(toElem);
-  line.setAttribute('x1', from.x);
-  line.setAttribute('y1', from.y);
-  line.setAttribute('x2', to.x);
-  line.setAttribute('y2', to.y);
-}
-
+// === Создание клона ===
 function createClone(originElement) {
-  try {
-    cloneSound.currentTime = 0;
-    cloneSound.play();
-  } catch (e) {
-    console.log("Ошибка воспроизведения:", e);
-  }
+  try { cloneSound.currentTime = 0; cloneSound.play(); } catch {}
 
   const originCenter = getCenter(originElement);
+
   const clone = document.createElement('img');
   clone.src = 'images/lico.png';
-  clone.className = 'clone';
-  clone.style.left = `${originCenter.x}px`;
-  clone.style.top = `${originCenter.y}px`;
-  clone.style.width = isTouchDevice ? '18vw' : '150px';
-  clone.style.zIndex = '1001';
+  Object.assign(clone.style, {
+    position: 'absolute',
+    width: isTouch ? '28vw' : '200px',
+    left: `${originCenter.x}px`,
+    top: `${originCenter.y}px`,
+    transform: 'translate(-50%, -50%)',
+    zIndex: '1001',
+    cursor: 'pointer'
+  });
   document.body.appendChild(clone);
 
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -117,15 +67,25 @@ function createClone(originElement) {
   svg.appendChild(line);
 
   const timerLabel = document.createElement('div');
-  timerLabel.className = 'timer-label';
   timerLabel.textContent = '...';
-  timerLabel.style.zIndex = '1002';
+  Object.assign(timerLabel.style, {
+    position: 'absolute',
+    fontSize: '16px',
+    fontFamily: 'sans-serif',
+    fontWeight: 'bold',
+    background: 'white',
+    padding: '2px 6px',
+    border: '1px solid black',
+    borderRadius: '4px',
+    zIndex: '1002'
+  });
   document.body.appendChild(timerLabel);
 
   const label = document.createElement('div');
-  label.className = 'label';
   label.textContent = 'ТЫ';
   Object.assign(label.style, {
+    position: 'absolute',
+    fontSize: '14px',
     fontFamily: 'sans-serif',
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -137,248 +97,115 @@ function createClone(originElement) {
     clone,
     line,
     origin: originElement,
-    startTime: Date.now(),
+    label,
+    timerLabel,
     isDragging: false,
     draggingOffset: { x: 0, y: 0 },
     targetX: originCenter.x,
     targetY: originCenter.y,
-    timer: 20000 + Math.random() * 40000,
     lastUpdate: Date.now(),
-    expired: false,
-    timerLabel,
-    label,
-    warningLabel: null,
-    springTimeout: null
+    timer: 30000
   };
 
   clones.push(data);
-  totalConnections++;
-  counterLabel.textContent = `связей = ${totalConnections}`;
   attachEvents(data);
   updateLine(line, originElement, clone);
 }
 
-
-
-
-// ... остальная часть script.js без изменений ...
-
-
+// === Движение и касание ===
 function attachEvents(data) {
   const { clone } = data;
-  let mouseDownTime = 0;
   let moved = false;
 
-  function startDrag(e) {
-    if (data.expired) return;
-    e.preventDefault();
-    const isTouch = e.type === 'touchstart';
-    const point = isTouch ? e.touches[0] : e;
+  clone.addEventListener('mousedown', start);
+  clone.addEventListener('touchstart', start, { passive: false });
 
-    mouseDownTime = Date.now();
+  function start(e) {
+    e.preventDefault();
     moved = false;
-    const cloneRect = clone.getBoundingClientRect();
-    data.draggingOffset.x = point.clientX - cloneRect.left;
-    data.draggingOffset.y = point.clientY - cloneRect.top;
+    const isTouch = e.type === 'touchstart';
+    const x = isTouch ? e.touches[0].clientX : e.clientX;
+    const y = isTouch ? e.touches[0].clientY : e.clientY;
+    const rect = clone.getBoundingClientRect();
+    data.draggingOffset.x = x - rect.left;
+    data.draggingOffset.y = y - rect.top;
     data.isDragging = true;
 
-    function onMove(moveEvent) {
-      const movePoint = isTouch ? moveEvent.touches[0] : moveEvent;
+    const move = ev => {
+      const mx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const my = ev.touches ? ev.touches[0].clientY : ev.clientY;
+      data.targetX = mx - data.draggingOffset.x + clone.offsetWidth / 2;
+      data.targetY = my - data.draggingOffset.y + clone.offsetHeight / 2;
       moved = true;
-      data.targetX = movePoint.clientX - data.draggingOffset.x + clone.offsetWidth / 2;
-      data.targetY = movePoint.clientY - data.draggingOffset.y + clone.offsetHeight / 2;
+    };
 
-      if (!data.expired) {
-        data.timer = 20000 + Math.random() * 40000;
-        data.lastUpdate = Date.now();
-        data.line.classList.add('spring-effect');
-        clearTimeout(data.springTimeout);
-        data.springTimeout = setTimeout(() => {
-          data.line.classList.remove('spring-effect');
-        }, 400);
-      }
-    }
-
-    function onUp() {
-      const moveType = isTouch ? 'touchmove' : 'mousemove';
-      const upType = isTouch ? 'touchend' : 'mouseup';
-
-      document.removeEventListener(moveType, onMove);
-      document.removeEventListener(upType, onUp);
+    const stop = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', stop);
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('touchend', stop);
       data.isDragging = false;
+      if (!moved) createClone(clone);
+    };
 
-      if (!moved && Date.now() - mouseDownTime < 200) {
-        if (clone.src.includes('lico3.png')) return;
-        createClone(clone);
-      }
-    }
-
-    const moveType = isTouch ? 'touchmove' : 'mousemove';
-    const upType = isTouch ? 'touchend' : 'mouseup';
-    document.addEventListener(moveType, onMove, { passive: false });
-    document.addEventListener(upType, onUp, { passive: false });
-  }
-
-  clone.addEventListener('mousedown', startDrag);
-  clone.addEventListener('touchstart', startDrag, { passive: false });
-
-  // Поворот клона за курсором на десктопе
-  if (!isTouchDevice) {
-    document.addEventListener('mousemove', (e) => {
-      if (data.isDragging || data.expired) return;
-      const center = getCenter(clone);
-      const dx = e.clientX - center.x;
-      const dy = e.clientY - center.y;
-      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-      clone.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-    });
-  } else {
-    document.addEventListener('touchmove', (e) => {
-      if (data.isDragging || data.expired) return;
-      const touch = e.touches[0];
-      const center = getCenter(clone);
-      const dx = touch.clientX - center.x;
-      const dy = touch.clientY - center.y;
-      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-      clone.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-    }, { passive: true });
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', stop);
+    document.addEventListener('touchmove', move);
+    document.addEventListener('touchend', stop);
   }
 }
 
-function handleCreateClone(e) {
-  e.preventDefault();
-
-  // показываем полную инструкцию только при первом взаимодействии
-  if (!instructionRevealed) {
-    revealFullInstruction();
-  }
-
-  createClone(lico);
+// === Анимация ===
+function getCenter(elem) {
+  const rect = elem.getBoundingClientRect();
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2
+  };
 }
 
-}
-
-lico.addEventListener('mousedown', handleCreateClone);
-lico.addEventListener('touchstart', handleCreateClone, { passive: false });
-
-document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-if (!isTouchDevice) {
-  document.addEventListener('mousemove', (e) => {
-    const center = getCenter(lico);
-    const dx = e.clientX - center.x;
-    const dy = e.clientY - center.y;
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    lico.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-  });
-} else {
-  document.addEventListener('touchmove', (e) => {
-    const touch = e.touches[0];
-    const center = getCenter(lico);
-    const dx = touch.clientX - center.x;
-    const dy = touch.clientY - center.y;
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-    lico.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-  }, { passive: true });
+function updateLine(line, from, to) {
+  const p1 = getCenter(from);
+  const p2 = getCenter(to);
+  line.setAttribute('x1', p1.x);
+  line.setAttribute('y1', p1.y);
+  line.setAttribute('x2', p2.x);
+  line.setAttribute('y2', p2.y);
 }
 
 function animate() {
   const now = Date.now();
   for (const data of clones) {
-    const { clone, line, origin, isDragging, targetX, targetY, expired, timerLabel, label } = data;
-    if (expired) continue;
-
+    const { clone, line, origin, label, timerLabel } = data;
     const currentX = parseFloat(clone.style.left);
     const currentY = parseFloat(clone.style.top);
-
-    const springStrength = 0.1;
-    const damping = 0.8;
-    const vx = (targetX - currentX) * springStrength;
-    const vy = (targetY - currentY) * springStrength;
-    const newX = currentX + vx * damping;
-    const newY = currentY + vy * damping;
-
+    const vx = (data.targetX - currentX) * 0.1;
+    const vy = (data.targetY - currentY) * 0.1;
+    const newX = currentX + vx;
+    const newY = currentY + vy;
     clone.style.left = `${newX}px`;
     clone.style.top = `${newY}px`;
+
     updateLine(line, origin, clone);
-
-    const dist = Math.hypot(newX - getCenter(origin).x, newY - getCenter(origin).y);
-    const decayRate = 1 + dist / 200;
-    const elapsed = now - data.lastUpdate;
-    data.timer -= elapsed * decayRate;
-    data.lastUpdate = now;
-
-    const remaining = Math.max(0, data.timer);
-    const thickness = Math.max(0.5, (remaining / 60000) * 5);
-    line.setAttribute('stroke-width', thickness.toFixed(2));
-
-    timerLabel.textContent = (remaining / 1000).toFixed(1);
-    timerLabel.style.left = `${newX}px`;
-    timerLabel.style.top = `${newY - 30}px`;
 
     label.style.left = `${newX}px`;
     label.style.top = `${newY + 25}px`;
+    timerLabel.style.left = `${newX}px`;
+    timerLabel.style.top = `${newY - 40}px`;
 
-    if (remaining < 5000) {
-      const pulse = Math.abs(Math.sin(remaining / 200));
-      line.setAttribute('stroke', `rgba(0,0,0,${pulse.toFixed(2)})`);
-      line.setAttribute('stroke-dasharray', '5,2');
+    const elapsed = now - data.lastUpdate;
+    const dist = Math.hypot(newX - getCenter(origin).x, newY - getCenter(origin).y);
+    const decayRate = 1 + dist / 200;
+    data.timer -= elapsed * decayRate;
+    data.lastUpdate = now;
 
-      if (!data.warningLabel) {
-        const warning = document.createElement('div');
-        warning.className = 'warning-label';
-        warning.textContent = 'эта связь на исходе';
-        document.body.appendChild(warning);
-        data.warningLabel = warning;
-      }
-
-      data.warningLabel.style.left = `${newX}px`;
-      data.warningLabel.style.top = `${newY - 80}px`;
-    } else {
-      line.setAttribute('stroke', 'black');
-      line.removeAttribute('stroke-dasharray');
-      if (data.warningLabel) {
-        data.warningLabel.remove();
-        data.warningLabel = null;
-      }
+    if (data.isDragging) {
+      data.timer = 30000;
     }
 
-    if (remaining <= 0) {
-      data.expired = true;
-      line.remove();
-      timerLabel.remove();
-      if (data.warningLabel) data.warningLabel.remove();
-      clone.src = 'images/lico3.png';
-      label.textContent = 'пусто';
-      label.style.color = 'gray';
-
-      const totalTime = ((Date.now() - data.startTime) / 1000).toFixed(1);
-
-      if (parseFloat(totalTime) > longestConnection) {
-        longestConnection = parseFloat(totalTime);
-        const box = document.getElementById('longest-connection-box');
-        if (box) {
-          box.textContent = `самое долгое ты был в связи — ${longestConnection.toFixed(1)} сек`;
-        }
-      }
-
-      const summaryLabel = document.createElement('div');
-      summaryLabel.className = 'summary-label';
-      summaryLabel.textContent = `итого = ${totalTime} сек`;
-      document.body.appendChild(summaryLabel);
-
-      const center = getCenter(clone);
-      summaryLabel.style.left = `${center.x}px`;
-      summaryLabel.style.top = `${center.y + 40}px`;
-    }
+    const remaining = Math.max(0, data.timer);
+    timerLabel.textContent = (remaining / 1000).toFixed(1);
   }
-
-  const licoCenter = getCenter(lico);
-  originLabel.style.left = `${licoCenter.x}px`;
-  originLabel.style.top = `${licoCenter.y + 15}px`;
-  counterLabel.textContent = `сейчас связей = ${clones.filter(c => !c.expired).length}`;
-  counterLabel.style.left = `${licoCenter.x}px`;
-  counterLabel.style.top = `${licoCenter.y + 35}px`;
 
   requestAnimationFrame(animate);
 }
