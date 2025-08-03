@@ -4,6 +4,35 @@ const clones = [];
 const isTouch = window.matchMedia('(pointer: coarse)').matches;
 const cloneSound = new Audio('music/1.wav');
 
+// Центрируем lico
+window.addEventListener('load', () => {
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+
+  lico.style.position = 'absolute';
+  lico.style.left = `${centerX}px`;
+  lico.style.top = `${centerY}px`;
+  lico.style.transform = 'translate(-50%, -50%)';
+  lico.style.zIndex = '1001';
+
+  // Добавляем подпись "Я"
+  const licoLabel = document.createElement('div');
+  licoLabel.textContent = 'Я';
+  Object.assign(licoLabel.style, {
+    position: 'absolute',
+    fontSize: '14px',
+    fontFamily: 'sans-serif',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    zIndex: '1002',
+    pointerEvents: 'none',
+    left: `${centerX}px`,
+    top: `${centerY + lico.offsetHeight / 2 + 5}px`,
+    transform: 'translateX(-50%)'
+  });
+  document.body.appendChild(licoLabel);
+});
+
 // === Инструкция ===
 let instructionRevealed = false;
 const instructionBox = document.createElement('div');
@@ -50,16 +79,21 @@ function createClone(originElement) {
 
   const clone = document.createElement('img');
   clone.src = 'images/lico.png';
+  document.body.appendChild(clone);
+
+  // Клон немного меньше оригинала
+  const baseWidth = lico.offsetWidth;
+  clone.style.width = baseWidth > 0 ? `${baseWidth * 0.85}px` : (isTouch ? '24vw' : '180px');
+
   Object.assign(clone.style, {
     position: 'absolute',
-    width: isTouch ? '28vw' : '200px',
     left: `${originCenter.x}px`,
     top: `${originCenter.y}px`,
     transform: 'translate(-50%, -50%)',
     zIndex: '1001',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transition: 'opacity 0.3s ease'
   });
-  document.body.appendChild(clone);
 
   const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   line.setAttribute('stroke', 'black');
@@ -93,6 +127,8 @@ function createClone(originElement) {
   });
   document.body.appendChild(label);
 
+  const randomTimer = 20000 + Math.random() * 40000;
+
   const data = {
     clone,
     line,
@@ -104,7 +140,11 @@ function createClone(originElement) {
     targetX: originCenter.x,
     targetY: originCenter.y,
     lastUpdate: Date.now(),
-    timer: 30000
+    timer: randomTimer,
+    lineStrokeWidth: 5,
+    lineBlinkOn: false,
+    blinkCounter: 0,
+    fixed: false
   };
 
   clones.push(data);
@@ -112,7 +152,7 @@ function createClone(originElement) {
   updateLine(line, originElement, clone);
 }
 
-// === Движение и касание ===
+// === Перемещение ===
 function attachEvents(data) {
   const { clone } = data;
   let moved = false;
@@ -121,6 +161,8 @@ function attachEvents(data) {
   clone.addEventListener('touchstart', start, { passive: false });
 
   function start(e) {
+    if (data.fixed) return;
+
     e.preventDefault();
     moved = false;
     const isTouch = e.type === 'touchstart';
@@ -145,7 +187,14 @@ function attachEvents(data) {
       document.removeEventListener('touchmove', move);
       document.removeEventListener('touchend', stop);
       data.isDragging = false;
+
       if (!moved) createClone(clone);
+      else data.timer = 30000;
+
+      data.lineBlinkOn = false;
+      data.line.setAttribute('stroke-dasharray', '');
+      data.line.setAttribute('stroke', 'black');
+      data.line.setAttribute('stroke-width', '5');
     };
 
     document.addEventListener('mousemove', move);
@@ -175,36 +224,63 @@ function updateLine(line, from, to) {
 
 function animate() {
   const now = Date.now();
+
   for (const data of clones) {
     const { clone, line, origin, label, timerLabel } = data;
-    const currentX = parseFloat(clone.style.left);
-    const currentY = parseFloat(clone.style.top);
-    const vx = (data.targetX - currentX) * 0.1;
-    const vy = (data.targetY - currentY) * 0.1;
-    const newX = currentX + vx;
-    const newY = currentY + vy;
-    clone.style.left = `${newX}px`;
-    clone.style.top = `${newY}px`;
 
-    updateLine(line, origin, clone);
+    if (!data.fixed) {
+      const currentX = parseFloat(clone.style.left);
+      const currentY = parseFloat(clone.style.top);
+      const vx = (data.targetX - currentX) * 0.1;
+      const vy = (data.targetY - currentY) * 0.1;
+      const newX = currentX + vx;
+      const newY = currentY + vy;
 
-    label.style.left = `${newX}px`;
-    label.style.top = `${newY + 25}px`;
-    timerLabel.style.left = `${newX}px`;
-    timerLabel.style.top = `${newY - 40}px`;
+      clone.style.left = `${newX}px`;
+      clone.style.top = `${newY}px`;
 
-    const elapsed = now - data.lastUpdate;
-    const dist = Math.hypot(newX - getCenter(origin).x, newY - getCenter(origin).y);
-    const decayRate = 1 + dist / 200;
-    data.timer -= elapsed * decayRate;
-    data.lastUpdate = now;
+      updateLine(line, origin, clone);
 
-    if (data.isDragging) {
-      data.timer = 30000;
+      label.style.left = `${newX}px`;
+      label.style.top = `${newY + 25}px`;
+      timerLabel.style.left = `${newX}px`;
+      timerLabel.style.top = `${newY - 40}px`;
+
+      const elapsed = now - data.lastUpdate;
+      const dist = Math.hypot(newX - getCenter(origin).x, newY - getCenter(origin).y);
+      const decayRate = 1 + dist / 200;
+      data.timer -= elapsed * decayRate;
+      data.lastUpdate = now;
+
+      const remaining = Math.max(0, data.timer);
+      timerLabel.textContent = (remaining / 1000).toFixed(1);
+
+      const maxStroke = 5;
+      const minStroke = 1;
+      const totalTime = 30000;
+      const strokeWidth = Math.max(minStroke, maxStroke * (remaining / totalTime));
+      line.setAttribute('stroke-width', strokeWidth.toFixed(1));
+
+      if (remaining <= 5000 && remaining > 0) {
+        data.blinkCounter = (data.blinkCounter + 1) % 60;
+        if (data.blinkCounter < 30) {
+          line.setAttribute('stroke-dasharray', '10,5');
+          line.setAttribute('stroke', 'black');
+        } else {
+          line.setAttribute('stroke', 'transparent');
+        }
+      }
+
+      if (remaining <= 0 && !data.fixed) {
+        data.fixed = true;
+        clone.src = 'images/lico3.png';
+        line.setAttribute('stroke', 'black');
+        line.setAttribute('stroke-dasharray', '10,5');
+        line.setAttribute('stroke-width', '1');
+        clone.style.pointerEvents = 'none';
+        timerLabel.textContent = '0.0';
+      }
     }
-
-    const remaining = Math.max(0, data.timer);
-    timerLabel.textContent = (remaining / 1000).toFixed(1);
   }
 
   requestAnimationFrame(animate);
