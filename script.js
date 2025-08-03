@@ -5,14 +5,20 @@ const clones = [];
 const cloneSound = new Audio('music/1.wav');
 const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 
-// Инструкция: верхняя рамка с текстом
+// Инструкция без рамки
 const instructionBox = document.createElement('div');
 instructionBox.id = 'instruction';
-instructionBox.innerHTML = 'ВСЁ НАЧИНАЕТСЯ С «Я»';
+instructionBox.innerHTML = `
+  ЭТО НЕ СИМУЛЯТОР ОБЩЕНИЯ<br>
+  ЭТО СИМУЛЯТОР ЕГО ПОТЕРИ<br><br>
+  ТЫ ПОЯВИЛСЯ<br>
+  ТЕБЯ МОЖНО ОТПУСТИТЬ<br>
+  ТЕБЯ МОЖНО УДЕРЖАТЬ<br>
+  МОЖНО И ЗАБЫТЬ<br>
+  ТЫ ТОЖЕ МОЖЕШЬ НАЧАТЬ
+`;
 document.body.appendChild(instructionBox);
-let instructionRevealed = false;
 
-// Стилизация инструкции
 instructionBox.style.position = 'fixed';
 instructionBox.style.top = '0';
 instructionBox.style.left = '0';
@@ -24,7 +30,6 @@ instructionBox.style.textAlign = 'center';
 instructionBox.style.color = 'black';
 instructionBox.style.background = 'white';
 instructionBox.style.padding = '12px 0';
-instructionBox.style.borderBottom = '1px solid black';
 instructionBox.style.zIndex = '1000';
 instructionBox.style.textTransform = 'uppercase';
 
@@ -32,6 +37,14 @@ instructionBox.style.textTransform = 'uppercase';
 document.addEventListener('click', () => {
   cloneSound.play().catch(() => {});
 }, { once: true });
+
+const originLabel = document.createElement('div');
+originLabel.className = 'label';
+originLabel.textContent = 'Я';
+originLabel.style.fontFamily = 'sans-serif';
+originLabel.style.fontWeight = 'bold';
+originLabel.style.textTransform = 'uppercase';
+document.body.appendChild(originLabel);
 
 const counterLabel = document.createElement('div');
 counterLabel.className = 'label counter-label';
@@ -57,20 +70,6 @@ function updateLine(line, fromElem, toElem) {
   line.setAttribute('y2', to.y);
 }
 
-function revealFullInstruction() {
-  if (instructionRevealed) return;
-  instructionRevealed = true;
-  instructionBox.innerHTML = `
-    ЭТО НЕ СИМУЛЯТОР ОБЩЕНИЯ<br>
-    ЭТО СИМУЛЯТОР ЕГО ПОТЕРИ<br><br>
-    ТЫ ПОЯВИЛСЯ<br>
-    ТЕБЯ МОЖНО ОТПУСТИТЬ<br>
-    ТЕБЯ МОЖНО УДЕРЖАТЬ<br>
-    МОЖНО И ЗАБЫТЬ<br>
-    ТЫ ТОЖЕ МОЖЕШЬ НАЧАТЬ
-  `;
-}
-
 function createClone(originElement) {
   try {
     cloneSound.currentTime = 0;
@@ -78,8 +77,6 @@ function createClone(originElement) {
   } catch (e) {
     console.log("Ошибка воспроизведения:", e);
   }
-
-  revealFullInstruction();
 
   const originCenter = getCenter(originElement);
   const clone = document.createElement('img');
@@ -96,12 +93,15 @@ function createClone(originElement) {
 
   const timerLabel = document.createElement('div');
   timerLabel.className = 'timer-label';
-  timerLabel.textContent = '30.0';
+  timerLabel.textContent = '...';
   document.body.appendChild(timerLabel);
 
   const label = document.createElement('div');
   label.className = 'label';
-  label.textContent = 'ты';
+  label.textContent = 'ТЫ';
+  label.style.fontFamily = 'sans-serif';
+  label.style.fontWeight = 'bold';
+  label.style.textTransform = 'uppercase';
   document.body.appendChild(label);
 
   const data = {
