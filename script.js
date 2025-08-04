@@ -68,6 +68,7 @@ function centerLico() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   lico.style.position = 'absolute';
+  lico.style.zIndex = '1001';
   lico.style.left = `${vw / 2}px`;
   lico.style.top = `${vh / 2}px`;
   lico.style.transform = 'translate(-50%, -50%)';
