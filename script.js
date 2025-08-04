@@ -25,12 +25,10 @@ Object.assign(licoLabel.style, {
   textTransform: 'uppercase',
   color: 'black',
   zIndex: '1002',
-  left: '50%',
-  top: '100%',
-  marginTop: '16px',
-  transform: 'translateX(-50%)'
+  pointerEvents: 'none'
 });
-lico.parentElement.appendChild(licoLabel);
+document.body.appendChild(licoLabel);
+
 
 // === Инструкция ===
 let instructionRevealed = false;
@@ -79,7 +77,12 @@ window.addEventListener('resize', centerLico);
 function handleCreateClone(e) {
   e.preventDefault();
   if (!instructionRevealed) revealFullInstruction();
+
+// Запретить создание клонов с lico3.png
+  if (e.currentTarget.src && e.currentTarget.src.includes('lico3.png')) return;
+
   createClone(e.currentTarget);
+
 }
 
 // === Создание клона ===
@@ -167,7 +170,11 @@ document.addEventListener('mousemove', e => {
   const y = e.clientY + window.scrollY;
   lico.style.left = `${x}px`;
   lico.style.top = `${y}px`;
+
+  licoLabel.style.left = `${x}px`;
+  licoLabel.style.top = `${y + 40}px`; // смещение ниже лица
 });
+
 
 document.addEventListener('touchmove', e => {
   const touch = e.touches[0];
@@ -175,7 +182,11 @@ document.addEventListener('touchmove', e => {
   const y = touch.clientY + window.scrollY;
   lico.style.left = `${x}px`;
   lico.style.top = `${y}px`;
+
+  licoLabel.style.left = `${x}px`;
+  licoLabel.style.top = `${y + 40}px`;
 }, { passive: false });
+
 
 // === События перетаскивания ===
 function attachEvents(data) {
@@ -186,8 +197,10 @@ function attachEvents(data) {
   clone.addEventListener('touchstart', start, { passive: false });
 
   function start(e) {
-    e.preventDefault();
-    moved = false;
+  if (data.fixed) return; // запрет перемещения замороженных клонов
+
+  e.preventDefault();
+  moved = false;
     const isTouch = e.type === 'touchstart';
     const x = isTouch ? e.touches[0].clientX : e.clientX;
     const y = isTouch ? e.touches[0].clientY : e.clientY;
@@ -305,6 +318,24 @@ function animate() {
       }
     }
   }
+  // === Вращение клонов в сторону курсора ===
+const cursor = {
+  x: parseFloat(lico.style.left) + window.scrollX,
+  y: parseFloat(lico.style.top) + window.scrollY
+};
+
+for (const data of clones) {
+  const { clone } = data;
+
+  const cloneCenter = getCenter(clone);
+  const dx = cursor.x - cloneCenter.x;
+  const dy = cursor.y - cloneCenter.y;
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+  // Сохраняем translate + добавляем вращение
+  clone.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+}
+
   requestAnimationFrame(animate);
 }
 
