@@ -4,10 +4,16 @@ const clones = [];
 const isTouch = window.matchMedia('(pointer: coarse)').matches;
 const cloneSound = new Audio('music/1.wav');
 
+// Поместим SVG ниже по слоям (задний фон)
+svg.style.position = 'absolute';
+svg.style.top = 0;
+svg.style.left = 0;
+svg.style.zIndex = '0';
+svg.style.pointerEvents = 'none'; // чтобы не мешал
+
 // === Надпись "Я" под lico ===
 const parent = lico.parentElement;
 parent.style.position = 'relative';
-
 
 const licoLabel = document.createElement('div');
 licoLabel.textContent = 'Я';
@@ -20,12 +26,11 @@ Object.assign(licoLabel.style, {
   color: 'black',
   zIndex: '1002',
   left: '50%',
-  top: '100%', // ниже lico
-  marginTop: '16px', // ← запятая здесь!
-  transform: 'translateX(-50%)' // ← теперь работает
+  top: '100%',
+  marginTop: '16px',
+  transform: 'translateX(-50%)'
 });
 lico.parentElement.appendChild(licoLabel);
-
 
 // === Инструкция ===
 let instructionRevealed = false;
@@ -58,11 +63,22 @@ function revealFullInstruction() {
 // === Обработка клика на lico ===
 lico.addEventListener('mousedown', handleCreateClone);
 lico.addEventListener('touchstart', handleCreateClone, { passive: false });
+// Центрирование при загрузке
+function centerLico() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  lico.style.position = 'absolute';
+  lico.style.left = `${vw / 2}px`;
+  lico.style.top = `${vh / 2}px`;
+  lico.style.transform = 'translate(-50%, -50%)';
+}
+centerLico();
+window.addEventListener('resize', centerLico);
 
 function handleCreateClone(e) {
   e.preventDefault();
   if (!instructionRevealed) revealFullInstruction();
-  createClone(lico);
+  createClone(e.currentTarget);
 }
 
 // === Создание клона ===
@@ -144,6 +160,22 @@ function createClone(originElement) {
   updateLine(line, originElement, clone);
 }
 
+// === Слежение за курсором ===
+document.addEventListener('mousemove', e => {
+  const x = e.clientX + window.scrollX;
+  const y = e.clientY + window.scrollY;
+  lico.style.left = `${x}px`;
+  lico.style.top = `${y}px`;
+});
+
+document.addEventListener('touchmove', e => {
+  const touch = e.touches[0];
+  const x = touch.clientX + window.scrollX;
+  const y = touch.clientY + window.scrollY;
+  lico.style.left = `${x}px`;
+  lico.style.top = `${y}px`;
+}, { passive: false });
+
 // === События перетаскивания ===
 function attachEvents(data) {
   const { clone } = data;
@@ -192,7 +224,7 @@ function attachEvents(data) {
   }
 }
 
-// === Вспомогательные функции ===
+// === Вспомогательные ===
 function getCenter(elem) {
   const rect = elem.getBoundingClientRect();
   return {
@@ -229,10 +261,10 @@ function animate() {
       updateLine(line, origin, clone);
 
       label.style.left = `${newX}px`;
-      label.style.top = `${newY + 40}px`; // "ТЫ" ниже
+      label.style.top = `${newY + 40}px`;
 
       timerLabel.style.left = `${newX}px`;
-      timerLabel.style.top = `${newY - 60}px`; // таймер выше
+      timerLabel.style.top = `${newY - 60}px`;
 
       const elapsed = now - data.lastUpdate;
       const dist = Math.hypot(newX - getCenter(origin).x, newY - getCenter(origin).y);
